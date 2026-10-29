@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: papertrail
+    runtime: python
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: MOCK_MODE
+        value: "false"
+      - key: NEBIUS_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: DEMO_MAX_ANALYSES_PER_DAY
+        value: "80"
+      - key: DEMO_MAX_ANALYSES_PER_IP_HOUR
+        value: "6"

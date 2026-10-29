@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PaperTrail — What does this document want?</title>
+  <meta name="description" content="Add a photo of a bill, notice or letter. PaperTrail reads it with NVIDIA Nemotron on Nebius Token Factory, checks official pages with Tavily, and returns the deadline, an ordered plan and a reply you can send." />
+  <meta name="theme-color" content="#f5f1e8" />
+  <meta property="og:title" content="PaperTrail — What does this document want?" />
+  <meta property="og:description" content="Get the deadline, an ordered plan and the pages it came from." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23f5f1e8'/%3E%3Cpath d='M9 5h10l5 5v17H9z' fill='none' stroke='%2317160f' stroke-width='1.8'/%3E%3Cpath d='M19 5v5h5' fill='none' stroke='%2317160f' stroke-width='1.8'/%3E%3Ccircle cx='25' cy='25' r='3' fill='%2376b900'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="app-bar">
+    <div class="app-bar__inner">
+      <a class="brand" href="/" aria-label="PaperTrail home">
+        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M8 5h11l5 5v17H8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+          <path d="M19 5v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+          <path d="M12 16h7M12 20h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          <circle cx="25.5" cy="25.5" r="3" fill="var(--green)" />
+        </svg>
+        <span class="brand__name">PaperTrail</span>
+      </a>
+      <p class="tagline">Read a bill, notice or letter. Get the deadline and the next step.</p>
+      <div class="app-bar__actions">
+        <div class="pill pill--loading" id="mode-pill" role="status">Checking</div>
+        <button class="btn btn--small btn--secondary" id="new-doc-btn" type="button" aria-label="New document" hidden>New document</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1" class="app">
+    <aside class="rail" aria-label="Document intake and details">
+      <div id="rail-intake">
+        <p class="rail__kicker">New document</p>
+        <h1>What does this document want?</h1>
+        <p class="rail__lede">Add a photo of a bill, notice or letter. You get the deadline, the steps in order, and a reply you can send.</p>
+
+        <section class="intake" aria-labelledby="intake-title">
+          <div class="intake__head">
+            <h2 id="intake-title">Upload</h2>
+            <span class="mono muted">JPG, PNG or WEBP · 8 MB</span>
+          </div>
+          <div class="intake__body">
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-describedby="upload-help" aria-label="Drop a photo of the page here or choose a file">
+              <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp" hidden />
+              <div class="dropzone__prompt" id="dropzone-prompt">
+                <svg class="icon icon--lg" aria-hidden="true"><use href="#i-upload" /></svg>
+                <strong>Drop a photo of the page here</strong>
+                <span class="muted">or choose a file</span>
+              </div>
+              <img id="preview" class="preview" alt="" hidden />
+              <span class="dropzone__fold" aria-hidden="true"></span>
+            </div>
+            <p class="intake__help" id="upload-help">One page. JPG, PNG or WEBP, up to 8 MB. PDFs are not supported yet. Your photo is read in memory and not stored.</p>
+
+            <div class="intake__actions">
+              <button id="analyze-btn" class="btn btn--primary" type="button" hidden disabled>Analyze document</button>
+              <button id="sample-btn" class="btn btn--secondary" type="button">Try sample bill</button>
+              <span id="file-name" class="file-name mono"></span>
+            </div>
+            <div id="upload-error" class="inline-error" role="alert" hidden></div>
+          </div>
+        </section>
+
+        <ul class="expectations" aria-label="What you get">
+          <li><strong>Reads the dates</strong><span>Finds the deadline and the amount.</span></li>
+          <li><strong>Cites the pages</strong><span>Links the source behind each step.</span></li>
+          <li><strong>Exports the plan</strong><span>Calendar file and Markdown.</span></li>
+        </ul>
+        <p class="rail__privacy">About 10 seconds. Your photo is not stored.</p>
+      </div>
+
+      <div id="rail-doc" hidden>
+        <p class="rail__kicker">Document</p>
+        <div class="doc-card">
+          <img id="doc-thumb" class="doc-card__thumb" alt="" />
+          <div class="doc-card__body">
+            <p id="doc-name" class="doc-card__name">Document</p>
+            <p id="doc-meta" class="doc-card__meta mono"></p>
+          </div>
+        </div>
+
+        <dl class="doc-stats">
+          <div class="doc-stat doc-stat--wide"><dt>Issuer</dt><dd id="doc-issuer">—</dd></div>
+          <div class="doc-stat"><dt>Due</dt><dd id="doc-due">—</dd></div>
+          <div class="doc-stat"><dt>Amount</dt><dd id="doc-amount">—</dd></div>
+        </dl>
+
+        <button id="replace-btn" class="btn btn--secondary btn--full" type="button">Replace document</button>
+
+        <details class="disclosure" id="facts-box">
+          <summary>Check the details we read</summary>
+          <table class="facts">
+            <caption class="sr-only">Extracted facts</caption>
+            <tbody id="facts-body"></tbody>
+          </table>
+        </details>
+
+        <details class="disclosure" id="trace-box">
+          <summary>Pipeline trace</summary>
+          <ol class="trace" id="trace-list" role="list"></ol>
+        </details>
+      </div>
+    </aside>
+
+    <section class="stage" aria-label="Case file">
+      <p id="live-status" class="sr-only" role="status" aria-live="polite"></p>
+
+      <div id="case-empty" class="empty">
+        <div class="empty__head">
+          <p class="kicker">Case file</p>
+          <h2>Your plan opens here.</h2>
+          <p class="empty__lede">Drop a document or open the sample. You get the deadline, the steps in order, and the pages behind them.</p>
+        </div>
+
+        <div class="empty__artifact">
+          <img class="empty__bill" src="/sample-bill.png" alt="Sample BESCOM electricity bill used for the demo" />
+          <div class="empty__artifact-copy">
+            <p class="kicker">Sample</p>
+            <h3>BESCOM electricity bill</h3>
+            <p>₹2,340 due. One late fee. One disconnection warning.</p>
+            <button id="empty-sample-btn" class="btn btn--primary" type="button">Open the sample case</button>
+          </div>
+        </div>
+
+        <ol class="empty__steps">
+          <li><span class="mono">01</span><div><strong>Read</strong><p>The page is transcribed into dates, amounts and references.</p></div></li>
+          <li><span class="mono">02</span><div><strong>Find the route</strong><p>Official pages are checked and ranked before the plan is written.</p></div></li>
+          <li><span class="mono">03</span><div><strong>Plan and reply</strong><p>You get ordered steps, a calendar file and a draft message.</p></div></li>
+        </ol>
+        <p class="empty__note">One page. About ten seconds. Nothing is stored after the response.</p>
+      </div>
+
+      <div id="case-loading" class="loading" hidden aria-busy="true">
+        <div class="loading__head">
+          <p class="kicker">Working</p>
+          <h2 id="loading-title" tabindex="-1">Reading your document</h2>
+          <p class="muted">This usually takes 10 to 15 seconds.</p>
+        </div>
+        <div class="stage-strip" id="pipeline-card">
+          <ol class="pipeline" id="pipeline" role="list">
+            <li class="pipeline__row" data-stage="read">
+              <div class="pipeline__top"><span class="pipeline__num">01</span><span class="dot" data-role="dot" aria-hidden="true"></span></div>
+              <div class="pipeline__text"><strong>Read</strong><span>Nemotron 3.5 Super VL</span></div>
+              <span class="pipeline__status" data-role="status">waiting</span>
+            </li>
+            <li class="pipeline__row" data-stage="triage">
+              <div class="pipeline__top"><span class="pipeline__num">02</span><span class="dot" data-role="dot" aria-hidden="true"></span></div>
+              <div class="pipeline__text"><strong>Triage</strong><span>Nemotron 3 Nano</span></div>
+              <span class="pipeline__status" data-role="status">waiting</span>
+            </li>
+            <li class="pipeline__row" data-stage="verify">
+              <div class="pipeline__top"><span class="pipeline__num">03</span><span class="dot" data-role="dot" aria-hidden="true"></span></div>
+              <div class="pipeline__text"><strong>Verify</strong><span>Tavily web search</span></div>
+              <span class="pipeline__status" data-role="status">waiting</span>
+            </li>
+            <li class="pipeline__row" data-stage="plan">
+              <div class="pipeline__top"><span class="pipeline__num">04</span><span class="dot" data-role="dot" aria-hidden="true"></span></div>
+              <div class="pipeline__text"><strong>Plan</strong><span>Nemotron 3 Ultra</span></div>
+              <span class="pipeline__status" data-role="status">waiting</span>
+            </li>
+          </ol>
+        </div>
+        <div class="skeleton" aria-hidden="true">
+          <div class="skeleton__line skeleton__line--title"></div>
+          <div class="skeleton__line"></div>
+          <div class="skeleton__line skeleton__line--short"></div>
+          <div class="skeleton__rows">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="case-error" class="error-card" hidden>
+        <p class="kicker">Could not read</p>
+        <h2 id="error-title" tabindex="-1">We could not read this document.</h2>
+        <p id="error-copy">Try again with the whole page in frame, good light and no glare.</p>
+        <div class="error-card__actions">
+          <button id="retry-btn" class="btn btn--primary" type="button">Try again</button>
+          <button id="error-sample-btn" class="btn btn--secondary" type="button">Use the sample</button>
+        </div>
+      </div>
+
+      <article id="results" class="result" hidden>
+        <header class="result__head">
+          <div class="badges">
+            <span class="badge" id="urgency-badge">—</span>
+            <span class="chip" id="category-chip">—</span>
+          </div>
+          <h1 id="headline" tabindex="-1"></h1>
+          <p class="result__summary" id="summary"></p>
+          <p class="result__meta" id="result-meta"></p>
+        </header>
+
+        <div class="decision">
+          <div class="decision__item">
+            <span class="decision__label">Due</span>
+            <strong id="due-date">—</strong>
+            <span class="decision__note" id="due-relative"></span>
+          </div>
+          <div class="decision__item">
+            <span class="decision__label">Amount</span>
+            <strong id="amount">—</strong>
+            <span class="decision__note">as read from the page</span>
+          </div>
+          <div class="decision__item">
+            <span class="decision__label">Issuer</span>
+            <strong id="issuer">—</strong>
+            <span class="decision__note" id="doc-type"></span>
+          </div>
+        </div>
+
+        <div class="risk">
+          <div class="risk__label">
+            <svg class="icon" aria-hidden="true"><use href="#i-alert" /></svg>
+            <span>If you do nothing</span>
+          </div>
+          <p id="risk"></p>
+        </div>
+
+        <div class="result__actions">
+          <a id="ics-link" class="btn btn--primary" href="#" title="Calendar file (.ics)">
+            <svg class="icon" aria-hidden="true"><use href="#i-calendar" /></svg>
+            Add to calendar
+          </a>
+          <a id="md-link" class="btn btn--secondary" href="#" title="Markdown file (.md)">
+            <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
+            Download plan
+          </a>
+        </div>
+
+        <section class="plan" aria-labelledby="plan-title">
+          <div class="section-head">
+            <h2 id="plan-title">What to do</h2>
+            <span class="mono muted" id="plan-count"></span>
+          </div>
+          <div id="plan-warning" class="source-warning" hidden></div>
+          <ol class="steps" id="plan-steps" role="list"></ol>
+          <p class="disclaimer" id="disclaimer"></p>
+        </section>
+
+        <details class="disclosure" id="draft-box" hidden>
+          <summary><span id="draft-label">Reply to the issuer</span><span class="disclosure__hint">Optional</span></summary>
+          <div class="draft">
+            <div class="draft__head">
+              <p class="muted">Replace the text in brackets before you send.</p>
+              <button id="copy-btn" class="btn btn--small btn--secondary" type="button">
+                <svg class="icon" aria-hidden="true"><use href="#i-copy" /></svg>
+                <span id="copy-label">Copy reply</span>
+              </button>
+            </div>
+            <pre id="draft-text" tabindex="0" aria-labelledby="draft-label"></pre>
+          </div>
+        </details>
+
+        <details class="disclosure" id="sources-box">
+          <summary>Where this came from <span class="disclosure__count" id="source-count"></span></summary>
+          <div id="source-warning" class="source-warning" hidden></div>
+          <ol class="sources" id="sources" role="list"></ol>
+        </details>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Paperwork should not cost people money for being hard to read.</p>
+    <div class="footer__links">
+      <a href="https://github.com/bhanu-dev82/papertrail" target="_blank" rel="noopener noreferrer">Source</a>
+      <a href="https://github.com/bhanu-dev82/papertrail/blob/main/README.md#privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+      <span>Not legal or financial advice</span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="alert" hidden></div>
+
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-upload" viewBox="0 0 24 24">
+      <path d="M12 16V4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="m7 9 5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M5 16v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24">
+      <path d="M12 3 2 21h20L12 3Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+      <path d="M12 9v5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      <path d="M12 18h.01" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" />
+      <path d="M16 3v4M8 3v4M3 11h18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24">
+      <rect x="9" y="9" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" />
+      <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M12 4v12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      <path d="m7 11 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M5 20h14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="i-external" viewBox="0 0 24 24">
+      <path d="M14 4h6v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M20 4 10 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      <path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+  </svg>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
